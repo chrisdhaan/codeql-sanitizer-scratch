@@ -4,19 +4,14 @@ const http = require('node:http');
 
 const root = resolve('/var/www/public');
 
-// VARIANT 1: two literal-separator checks OR'd, routed through a
-// separately-defined function — mirrors the real production shape that
-// still triggered js/path-injection after the "make it literal" fix.
-function isWithinRoot(root, target) {
-  return target.startsWith(root + '/') || target.startsWith(root + '\\');
-}
-
 http.createServer(async (req, res) => {
   const url = req.url ?? '/';
   const filename = url.split('?')[0]?.replace(/^\/+/, '') ?? 'index.html';
   const target = resolve(join(root, filename));
 
-  if (!isWithinRoot(root, target)) {
+  // VARIANT 2: same two literal-separator checks OR'd as Variant 1, but
+  // inlined directly in the guard — no separately-defined function.
+  if (!(target.startsWith(root + '/') || target.startsWith(root + '\\'))) {
     res.writeHead(403);
     res.end();
     return;
